@@ -2,6 +2,8 @@ import os
 import numpy as np
 import torch
 import torch.nn as nn
+import tkinter as tk
+from tkinter import scrolledtext
 
 from torch.utils.data import DataLoader, random_split
 from torchvision import datasets, transforms, models
@@ -113,8 +115,18 @@ def main():
             all_preds.extend(preds.tolist())
             all_labels.extend(labels.numpy().tolist())
 
-    print("Confusion Matrix:\n", confusion_matrix(all_labels, all_preds))
-    print("\nReport:\n", classification_report(all_labels, all_preds, target_names=class_names))
+    # Create GUI window for the report
+    root = tk.Tk()
+    root.title("Tumor Detection Classification Report")
+
+    text_area = scrolledtext.ScrolledText(root, wrap=tk.WORD, width=80, height=30)
+    text_area.pack(padx=10, pady=10)
+
+    report = f"Confusion Matrix:\n{confusion_matrix(all_labels, all_preds)}\n\nClassification Report:\n{classification_report(all_labels, all_preds, target_names=class_names)}"
+    text_area.insert(tk.END, report)
+    text_area.config(state=tk.DISABLED)
+
+    root.mainloop()
 
 def run_epoch(model, loader, criterion, optimizer, device, train=True):
     if train:
