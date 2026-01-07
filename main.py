@@ -4,6 +4,7 @@ import torch
 import torch.nn as nn
 import tkinter as tk
 from tkinter import scrolledtext
+import matplotlib.pyplot as plt
 
 from torch.utils.data import DataLoader, random_split
 from torchvision import datasets, transforms, models
@@ -125,6 +126,7 @@ def main():
     report = f"Confusion Matrix:\n{confusion_matrix(all_labels, all_preds)}\n\nClassification Report:\n{classification_report(all_labels, all_preds, target_names=class_names)}"
     text_area.insert(tk.END, report)
     text_area.config(state=tk.DISABLED)
+
 
     root.mainloop()
 
