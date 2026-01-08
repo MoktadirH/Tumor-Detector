@@ -5,6 +5,7 @@ import torch.nn as nn
 import tkinter as tk
 from tkinter import scrolledtext
 import matplotlib.pyplot as plt
+import torch
 
 from torch.utils.data import DataLoader, random_split
 from torchvision import datasets, transforms, models
@@ -13,6 +14,8 @@ from sklearn.metrics import classification_report, confusion_matrix
 
 def main():
     DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
+    if DEVICE== "cuda":
+        torch.backends.cudnn.benchmark = True
     print("Currently using:", DEVICE)
 
     TRAIN_DIR = r"C:\Users\mokta\Documents\Tumor Detector\Training"
@@ -61,10 +64,13 @@ def main():
 
     # validation should NOT use random augmentations, must be clean for tuning in training
     val_ds.dataset.transform = test_transforms
-
-    train_loader = DataLoader(train_ds, batch_size=BATCH_SIZE, shuffle=True,  num_workers=2)
-    val_loader   = DataLoader(val_ds,   batch_size=BATCH_SIZE, shuffle=False, num_workers=2)
-    test_loader  = DataLoader(test_ds,  batch_size=BATCH_SIZE, shuffle=False, num_workers=2)
+    if DEVICE == "cuda":
+        p_memory = True
+    else:
+        p_memory = False
+    train_loader = DataLoader(train_ds, batch_size=BATCH_SIZE, shuffle=True,  num_workers=2, pin_memory=p_memory)
+    val_loader   = DataLoader(val_ds,   batch_size=BATCH_SIZE, shuffle=False, num_workers=2, pin_memory=p_memory)
+    test_loader  = DataLoader(test_ds,  batch_size=BATCH_SIZE, shuffle=False, num_workers=2, pin_memory=p_memory)
 
     #resnet CNN for transfer learning
     model = models.resnet18(weights=models.ResNet18_Weights.DEFAULT)
@@ -85,7 +91,7 @@ def main():
     print(model.fc)
 
 
-    EPOCHS = 8
+    EPOCHS = 10
     best_val_acc = 0.0
 
     for epoch in range(EPOCHS):
