@@ -22,7 +22,7 @@ def main():
     TEST_DIR  = r"C:\Users\mokta\Documents\Tumor Detector\Testing"
 
     IMG_SIZE = 224
-    BATCH_SIZE = 32
+    BATCH_SIZE = 64
 
     train_transforms = transforms.Compose([
         transforms.Resize((IMG_SIZE, IMG_SIZE)),
@@ -68,9 +68,9 @@ def main():
         p_memory = True
     else:
         p_memory = False
-    train_loader = DataLoader(train_ds, batch_size=BATCH_SIZE, shuffle=True,  num_workers=2, pin_memory=p_memory, persistent_workers=True)
-    val_loader   = DataLoader(val_ds,   batch_size=BATCH_SIZE, shuffle=False, num_workers=2, pin_memory=p_memory, persistent_workers=True)
-    test_loader  = DataLoader(test_ds,  batch_size=BATCH_SIZE, shuffle=False, num_workers=2, pin_memory=p_memory, persistent_workers=True)
+    train_loader = DataLoader(train_ds, batch_size=BATCH_SIZE, shuffle=True,  num_workers=3, pin_memory=p_memory, persistent_workers=True)
+    val_loader   = DataLoader(val_ds,   batch_size=BATCH_SIZE, shuffle=False, num_workers=3, pin_memory=p_memory, persistent_workers=True)
+    test_loader  = DataLoader(test_ds,  batch_size=BATCH_SIZE, shuffle=False, num_workers=3, pin_memory=p_memory, persistent_workers=True)
 
     #resnet CNN for transfer learning
     model = models.resnet18(weights=models.ResNet18_Weights.DEFAULT)
