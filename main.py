@@ -98,11 +98,11 @@ def main():
 
         if val_acc > best_val_acc:
             best_val_acc = val_acc
-            torch.save(model.state_dict(), "best_resnet18.pt")
+            torch.save(model.state_dict(), "best_model.pt")
 
     print("Best validation accuracy:", best_val_acc)
 
-    model.load_state_dict(torch.load("best_resnet18.pt", map_location=DEVICE))
+    model.load_state_dict(torch.load("best_model.pt", map_location=DEVICE))
     model.eval()
 
     all_preds, all_labels = [], []
