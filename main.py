@@ -2,15 +2,12 @@ import os
 import numpy as np
 import torch
 import torch.nn as nn
-import tkinter as tk
-from tkinter import scrolledtext
-import matplotlib.pyplot as plt
+
 import torch
+import json
 
 from torch.utils.data import DataLoader, random_split
 from torchvision import datasets, transforms, models
-from sklearn.metrics import classification_report, confusion_matrix
-
 
 def main():
     DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
@@ -44,6 +41,8 @@ def main():
     test_ds    = datasets.ImageFolder(TEST_DIR,  transform=test_transforms)
 
     class_names = train_full.classes
+    with open("class_names.json", "w") as file:
+        json.dump(class_names, file)
     num_classes = len(class_names)
 
     print("Classes:", class_names)
@@ -72,7 +71,8 @@ def main():
     val_loader   = DataLoader(val_ds,   batch_size=BATCH_SIZE, shuffle=False, num_workers=3, pin_memory=p_memory, persistent_workers=True)
     test_loader  = DataLoader(test_ds,  batch_size=BATCH_SIZE, shuffle=False, num_workers=3, pin_memory=p_memory, persistent_workers=True)
 
-    #resnet CNN for transfer learning
+    #Build model
+        #resnet CNN for transfer learning
     model = models.resnet18(weights=models.ResNet18_Weights.DEFAULT)
 
     #Keep the feature extraction layers frozen
@@ -82,8 +82,8 @@ def main():
     #Change the final layer to match the number of classes
     in_features = model.fc.in_features
     model.fc = nn.Linear(in_features, num_classes)
+    model= model.to(DEVICE)
 
-    model = model.to(DEVICE)
 
     criterion = nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam(model.fc.parameters(), lr=1e-3)
@@ -91,7 +91,7 @@ def main():
     print(model.fc)
 
 
-    EPOCHS = 10
+    EPOCHS = 20
     best_val_acc = 0.0
 
     for epoch in range(EPOCHS):
@@ -122,28 +122,6 @@ def main():
             all_preds.extend(preds.tolist())
             all_labels.extend(labels.numpy().tolist())
 
-    # Create GUI window for the report
-    root = tk.Tk()
-    root.title("Tumor Detection Classification Report")
-
-    text_area = scrolledtext.ScrolledText(root, wrap=tk.WORD, width=80, height=30)
-    text_area.pack(padx=10, pady=10)
-    
-    cm = confusion_matrix(all_labels, all_preds)
-    plt.title("Confusion Matrix")
-    plt.imshow(cm, interpolation='nearest', cmap=plt.cm.Blues)
-    plt.xlabel('Predicted label')
-    plt.ylabel('True label')
-    plt.colorbar()
-    plt.savefig("confusion_matrix.png")
-    plt.close()
-
-    report = f"Confusion Matrix:\n{confusion_matrix(all_labels, all_preds)}\n\nClassification Report:\n{classification_report(all_labels, all_preds, target_names=class_names)}"
-    text_area.insert(tk.END, report)
-    text_area.config(state=tk.DISABLED)
-
-
-    root.mainloop()
 
 def run_epoch(model, loader, criterion, optimizer, device, train=True):
     if train:
@@ -176,7 +154,39 @@ def run_epoch(model, loader, criterion, optimizer, device, train=True):
 
     return total_loss / total, correct / total
 
+def load_for_inference(model_path="best_model.pt"):
+    DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
+    if DEVICE == "cuda":
+        torch.backends.cudnn.benchmark = True
+
+    IMG_SIZE = 224
+
+    test_transforms = transforms.Compose([
+        transforms.Resize((IMG_SIZE, IMG_SIZE)),
+        transforms.ToTensor(),
+        transforms.Normalize(mean=[0.485, 0.456, 0.406],
+                             std =[0.229, 0.224, 0.225])
+    ])
+
+    train_full = datasets.ImageFolder(r"C:\Users\mokta\Documents\Tumor Detector\Training")
+    class_names = train_full.classes
+    num_classes = len(class_names)
+
+    model = models.resnet18(weights=models.ResNet18_Weights.DEFAULT)
+    for param in model.parameters():
+        param.requires_grad = False
+    in_features = model.fc.in_features
+    model.fc = nn.Linear(in_features, num_classes)
+    model = model.to(DEVICE)
+
+    model.load_state_dict(torch.load(model_path, map_location=DEVICE))
+    model.eval()
+
+    return model, class_names, test_transforms, DEVICE
+
 if __name__ == "__main__":
     main()
+    import app
+    app.display()
 
 
