@@ -61,7 +61,7 @@ def main():
         generator=torch.Generator().manual_seed(42)
     )
 
-    # validation should NOT use random augmentations, must be clean for tuning in training
+    #Random augmentation should not be there
     val_ds.dataset.transform = test_transforms
     if DEVICE == "cuda":
         p_memory = True
@@ -71,8 +71,8 @@ def main():
     val_loader   = DataLoader(val_ds,   batch_size=BATCH_SIZE, shuffle=False, num_workers=3, pin_memory=p_memory, persistent_workers=True)
     test_loader  = DataLoader(test_ds,  batch_size=BATCH_SIZE, shuffle=False, num_workers=3, pin_memory=p_memory, persistent_workers=True)
 
-    #Build model
-        #resnet CNN for transfer learning
+
+    #Resnet CNN for transfer learning
     model = models.resnet18(weights=models.ResNet18_Weights.DEFAULT)
 
     #Keep the feature extraction layers frozen
