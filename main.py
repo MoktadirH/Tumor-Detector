@@ -4,7 +4,6 @@ import torch
 import torch.nn as nn
 
 import torch
-import json
 
 from torch.utils.data import DataLoader, random_split
 from torchvision import datasets, transforms, models
@@ -15,8 +14,8 @@ def main():
         torch.backends.cudnn.benchmark = True
     print("Currently using:", DEVICE)
 
-    TRAIN_DIR = r"C:\Users\mokta\Documents\Tumor Detector\Training"
-    TEST_DIR  = r"C:\Users\mokta\Documents\Tumor Detector\Testing"
+    TRAIN_DIR = r"Training"
+    TEST_DIR  = r"Testing"
 
     IMG_SIZE = 224
     BATCH_SIZE = 64
@@ -41,8 +40,6 @@ def main():
     test_ds    = datasets.ImageFolder(TEST_DIR,  transform=test_transforms)
 
     class_names = train_full.classes
-    with open("class_names.json", "w") as file:
-        json.dump(class_names, file)
     num_classes = len(class_names)
 
     print("Classes:", class_names)
