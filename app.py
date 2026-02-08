@@ -12,6 +12,7 @@ import threading
 
 ctk.set_appearance_mode("System")
 ctk.set_default_color_theme("blue")
+ctk.set_widget_scaling(1.1) 
 
 class App(ctk.CTk):
     def __init__(self):
@@ -19,9 +20,13 @@ class App(ctk.CTk):
 
         self.title("MRI Tumor Classifier")
         self.geometry("1200x800")
+        
+        # Custom Font
+        self.main_font = ("Segoe UI", 14)
+        self.header_font = ("Segoe UI", 20, "bold")
 
         # Tabview
-        self.tab_view = ctk.CTkTabview(self)
+        self.tab_view = ctk.CTkTabview(self, anchor="nw")
         self.tab_view.pack(fill="both", expand=True, padx=20, pady=20)
 
         self.pred_tab = self.tab_view.add("Prediction")
@@ -37,6 +42,9 @@ class App(ctk.CTk):
         
         # Load Model
         self.load_model()
+        
+        # Graceful exit
+        self.protocol("WM_DELETE_WINDOW", self.on_closing)
 
     def load_model(self):
         try:
@@ -50,113 +58,115 @@ class App(ctk.CTk):
              self.model = None
 
     def setup_prediction_tab(self):
-        # Layout: Sidebar (Left), Content (Right)
         self.pred_tab.grid_columnconfigure(0, weight=0) # Sidebar
         self.pred_tab.grid_columnconfigure(1, weight=1) # Content
         self.pred_tab.grid_rowconfigure(0, weight=1)
 
-        # Sidebar
-        sidebar = ctk.CTkFrame(self.pred_tab, width=200, corner_radius=0)
-        sidebar.grid(row=0, column=0, sticky="nsew")
+        # Sidebar with "Card" look
+        sidebar = ctk.CTkFrame(self.pred_tab, width=220, corner_radius=15)
+        sidebar.grid(row=0, column=0, sticky="nsew", padx=(0, 10))
         
-        lbl = ctk.CTkLabel(sidebar, text="Inference", font=ctk.CTkFont(size=20, weight="bold"))
-        lbl.pack(padx=20, pady=(20, 10))
+        ctk.CTkLabel(sidebar, text="Inference", font=self.header_font).pack(padx=20, pady=(20, 10))
         
-        btn = ctk.CTkButton(sidebar, text="Upload Image", command=self.upload_image)
-        btn.pack(padx=20, pady=10)
+        ctk.CTkButton(sidebar, text="Upload Image", command=self.upload_image, font=self.main_font, height=40).pack(padx=20, pady=10)
 
-        # Theme toggle
-        self.appearance_mode_label = ctk.CTkLabel(sidebar, text="Theme:", anchor="w")
-        self.appearance_mode_label.pack(padx=20, pady=(20, 0))
-        self.appearance_mode_menu = ctk.CTkOptionMenu(sidebar, values=["System", "Light", "Dark"],
-                                                                command=self.change_appearance_mode_event)
-        self.appearance_mode_menu.pack(padx=20, pady=(10, 20))
+        ctk.CTkLabel(sidebar, text="Theme:", anchor="w", font=self.main_font).pack(padx=20, pady=(20, 0))
+        ctk.CTkOptionMenu(sidebar, values=["System", "Light", "Dark"], command=self.change_appearance_mode_event).pack(padx=20, pady=(10, 20))
 
         # Content Area
-        content = ctk.CTkFrame(self.pred_tab)
-        content.grid(row=0, column=1, padx=20, pady=20, sticky="nsew")
+        content = ctk.CTkFrame(self.pred_tab, corner_radius=15, fg_color="transparent")
+        content.grid(row=0, column=1, retry="nsew")
         content.grid_columnconfigure(0, weight=1)
         content.grid_columnconfigure(1, weight=1)
         content.grid_rowconfigure(0, weight=1)
 
         # Image Display
-        self.img_container = ctk.CTkFrame(content, fg_color="transparent")
+        self.img_container = ctk.CTkFrame(content, corner_radius=15)
         self.img_container.grid(row=0, column=0, rowspan=2, padx=10, pady=10, sticky="nsew")
         
-        self.image_label = ctk.CTkLabel(self.img_container, text="No Image Selected")
-        self.image_label.pack(expand=True, fill="both")
+        self.image_label = ctk.CTkLabel(self.img_container, text="No Image Selected", font=self.main_font)
+        self.image_label.pack(expand=True, fill="both", padx=10, pady=10)
 
-        # Stats & Chart
-        self.stats_container = ctk.CTkFrame(content, fg_color="transparent")
+        # Stats
+        self.stats_container = ctk.CTkFrame(content, corner_radius=15)
         self.stats_container.grid(row=0, column=1, padx=10, pady=10, sticky="nsew")
         
-        self.prediction_label = ctk.CTkLabel(self.stats_container, text="Prediction: -", font=ctk.CTkFont(size=24, weight="bold"))
+        self.prediction_label = ctk.CTkLabel(self.stats_container, text="Prediction: -", font=("Segoe UI", 24, "bold"))
         self.prediction_label.pack(pady=(40, 10))
         
-        self.confidence_label = ctk.CTkLabel(self.stats_container, text="Confidence: -", font=ctk.CTkFont(size=18))
+        self.confidence_label = ctk.CTkLabel(self.stats_container, text="Confidence: -", font=("Segoe UI", 18))
         self.confidence_label.pack(pady=(0, 20))
 
-        self.chart_frame = ctk.CTkFrame(content)
+        # Chart
+        self.chart_frame = ctk.CTkFrame(content, corner_radius=15)
         self.chart_frame.grid(row=1, column=1, padx=10, pady=10, sticky="nsew")
 
     def setup_training_tab(self):
-        # Layout
-        self.train_tab.grid_columnconfigure(0, weight=0) # Controls
-        self.train_tab.grid_columnconfigure(1, weight=1) # Visuals
+        self.train_tab.grid_columnconfigure(0, weight=0)
+        self.train_tab.grid_columnconfigure(1, weight=1)
         self.train_tab.grid_rowconfigure(0, weight=1)
 
         # Controls Sidebar
-        controls = ctk.CTkFrame(self.train_tab, width=250)
-        controls.grid(row=0, column=0, sticky="nsew", padx=10, pady=10)
+        controls = ctk.CTkFrame(self.train_tab, width=280, corner_radius=15)
+        controls.grid(row=0, column=0, sticky="nsew", padx=(0, 10))
         
-        ctk.CTkLabel(controls, text="Training Config", font=ctk.CTkFont(size=18, weight="bold")).pack(pady=20)
+        ctk.CTkLabel(controls, text="Configuration", font=self.header_font).pack(pady=20)
+
+        # Helper Tooltip Function
+        def create_tooltip(widget, text):
+            # Simple placeholder for tooltip logic or additional help text label
+            pass
 
         # Epochs
-        ctk.CTkLabel(controls, text="Epochs:").pack(pady=(10,0))
+        ctk.CTkLabel(controls, text="Epochs", font=self.main_font).pack(pady=(10,0))
+        ctk.CTkLabel(controls, text="(Training iterations)", font=("Segoe UI", 10)).pack()
         self.epochs_slider = ctk.CTkSlider(controls, from_=1, to=50, number_of_steps=49)
         self.epochs_slider.set(5)
         self.epochs_slider.pack(pady=5)
-        self.epochs_val = ctk.CTkLabel(controls, text="5")
+        self.epochs_val = ctk.CTkLabel(controls, text="5", font=self.main_font)
         self.epochs_val.pack()
         self.epochs_slider.configure(command=lambda v: self.epochs_val.configure(text=str(int(v))))
 
         # LR
-        ctk.CTkLabel(controls, text="Learning Rate:").pack(pady=(10,0))
-        self.lr_entry = ctk.CTkEntry(controls, placeholder_text="0.0001")
+        ctk.CTkLabel(controls, text="Learning Rate", font=self.main_font).pack(pady=(10,0))
+        ctk.CTkLabel(controls, text="(Step size for optimization)", font=("Segoe UI", 10)).pack()
+        self.lr_entry = ctk.CTkEntry(controls, placeholder_text="0.0001", font=self.main_font)
         self.lr_entry.insert(0, "0.0001")
         self.lr_entry.pack(pady=5)
 
         # Fine-tune
-        self.finetune_var = ctk.CTkCheckBox(controls, text="Fine-tune (Unfreeze Layers)")
+        self.finetune_var = ctk.CTkCheckBox(controls, text="Fine-tune", font=self.main_font)
         self.finetune_var.pack(pady=20)
+        ctk.CTkLabel(controls, text="Unfreezes layers for higher accuracy.\n(Slower training)", font=("Segoe UI", 10), text_color="gray").pack()
 
         # Start Button
-        self.train_btn = ctk.CTkButton(controls, text="Start Training", command=self.start_training_thread, fg_color="green")
-        self.train_btn.pack(pady=20)
+        self.train_btn = ctk.CTkButton(controls, text="Start Training", command=self.start_training_thread, 
+                                     fg_color="#2CC985", hover_color="#229966", font=("Segoe UI", 16, "bold"), height=50)
+        self.train_btn.pack(pady=30, padx=20)
 
         # Status
-        self.status_label = ctk.CTkLabel(controls, text="Status: Idle", text_color="gray")
+        self.status_label = ctk.CTkLabel(controls, text="Status: Idle", text_color="gray", font=self.main_font)
         self.status_label.pack(pady=10)
 
         self.progress_bar = ctk.CTkProgressBar(controls)
         self.progress_bar.set(0)
-        self.progress_bar.pack(pady=10)
+        self.progress_bar.pack(pady=10, has_focus=False)
 
         # Visuals Area
-        visuals = ctk.CTkFrame(self.train_tab)
-        visuals.grid(row=0, column=1, sticky="nsew", padx=10, pady=10)
+        visuals = ctk.CTkFrame(self.train_tab, corner_radius=15, fg_color="transparent")
+        visuals.grid(row=0, column=1, sticky="nsew")
         visuals.grid_rowconfigure(0, weight=1)
         visuals.grid_rowconfigure(1, weight=1)
         visuals.grid_columnconfigure(0, weight=1)
 
         # Log Box
-        self.log_box = ctk.CTkTextbox(visuals, width=400, height=200)
-        self.log_box.grid(row=0, column=0, sticky="nsew", padx=10, pady=10)
-        self.log_box.insert("0.0", "Training logs will appear here...\n")
+        self.log_box = ctk.CTkTextbox(visuals, font=("Consolas", 12), corner_radius=10)
+        self.log_box.grid(row=0, column=0, sticky="nsew", padx=0, pady=(0, 10))
+        self.log_box.insert("0.0", "--- Training Log ---\n")
 
         # Training Chart
-        self.train_chart_frame = ctk.CTkFrame(visuals)
-        self.train_chart_frame.grid(row=1, column=0, sticky="nsew", padx=10, pady=10)
+        self.train_chart_frame = ctk.CTkFrame(visuals, corner_radius=15)
+        self.train_chart_frame.grid(row=1, column=0, sticky="nsew", padx=0, pady=0)
 
     def change_appearance_mode_event(self, new_appearance_mode: str):
         ctk.set_appearance_mode(new_appearance_mode)
@@ -202,9 +212,13 @@ class App(ctk.CTk):
             widget.destroy()
 
         mode = ctk.get_appearance_mode()
-        bg_color = "#2b2b2b" if mode == "Dark" else "#dbdbdb"
+        bg_color = "#2b2b2b" if mode == "Dark" else "#dbdbdb" 
+        # Note: In a frame, bg might differ. Using None (transparent) can work if fig frame matches 
         text_color = "white" if mode == "Dark" else "black"
         
+        # Approximate frame specific colors
+        bg_color = "#212121" if mode == "Dark" else "#EBEBEB" # Standard CTk Frame colors
+
         fig, ax = plt.subplots(figsize=(5, 4), dpi=100)
         fig.patch.set_facecolor(bg_color)
         ax.set_facecolor(bg_color)
@@ -217,19 +231,19 @@ class App(ctk.CTk):
         ax.set_xlabel('Probability', color=text_color)
         
         ax.tick_params(colors=text_color)
+        for spine in ax.spines.values():
+            spine.set_color(text_color)
         ax.spines['top'].set_visible(False)
         ax.spines['right'].set_visible(False)
-        ax.spines['bottom'].set_color(text_color)
-        ax.spines['left'].set_color(text_color)
 
         plt.tight_layout()
         canvas = FigureCanvasTkAgg(fig, master=self.chart_frame)
         canvas.draw()
-        canvas.get_tk_widget().pack(expand=True, fill="both")
+        canvas.get_tk_widget().pack(expand=True, fill="both", padx=5, pady=5)
 
     def start_training_thread(self):
         self.train_btn.configure(state="disabled", text="Training...")
-        self.status_label.configure(text="Status: specific training...")
+        self.status_label.configure(text="Status: Training started...")
         self.progress_bar.set(0)
         self.train_losses = []
         self.val_losses = []
@@ -244,8 +258,6 @@ class App(ctk.CTk):
     def run_training(self, epochs, lr, fine_tune):
         trainer = main.Trainer()
         trainer.train(epochs=epochs, learning_rate=lr, fine_tune=fine_tune, callback=self.training_callback)
-        
-        # Reload model after training
         self.load_model()
         self.after(0, lambda: self.finish_training())
 
@@ -267,31 +279,34 @@ class App(ctk.CTk):
             widget.destroy()
 
         mode = ctk.get_appearance_mode()
-        bg_color = "#2b2b2b" if mode == "Dark" else "#dbdbdb"
+        bg_color = "#212121" if mode == "Dark" else "#EBEBEB"
         text_color = "white" if mode == "Dark" else "black"
         
         fig, ax = plt.subplots(figsize=(5, 3), dpi=100)
         fig.patch.set_facecolor(bg_color)
         ax.set_facecolor(bg_color)
         
-        ax.plot(self.train_losses, label="Train Loss", color="cyan")
-        ax.plot(self.val_losses, label="Val Loss", color="orange")
+        ax.plot(self.train_losses, label="Train Loss", color="#00E5FF", linewidth=2)
+        ax.plot(self.val_losses, label="Val Loss", color="#FF4081", linewidth=2, linestyle="--")
         
-        ax.set_title("Training Progress", color=text_color)
-        ax.legend(facecolor=bg_color, labelcolor=text_color)
+        ax.legend(facecolor=bg_color, labelcolor=text_color, framealpha=0)
         ax.tick_params(colors=text_color)
-        ax.spines['bottom'].set_color(text_color)
-        ax.spines['left'].set_color(text_color)
-        
+        for spine in ax.spines.values():
+            spine.set_color(text_color)
+            
         plt.tight_layout()
         canvas = FigureCanvasTkAgg(fig, master=self.train_chart_frame)
         canvas.draw()
-        canvas.get_tk_widget().pack(expand=True, fill="both")
+        canvas.get_tk_widget().pack(expand=True, fill="both", padx=5, pady=5)
 
     def finish_training(self):
         self.train_btn.configure(state="normal", text="Start Training")
         self.status_label.configure(text="Status: Training Complete")
         self.log_box.insert("end", "Training Finished. Model Reloaded.\n")
+
+    def on_closing(self):
+        self.quit()
+        self.destroy()
 
 def display():
     app = App()
