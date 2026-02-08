@@ -75,7 +75,7 @@ class App(ctk.CTk):
 
         # Content Area
         content = ctk.CTkFrame(self.pred_tab, corner_radius=15, fg_color="transparent")
-        content.grid(row=0, column=1, retry="nsew")
+        content.grid(row=0, column=1, sticky="nsew")
         content.grid_columnconfigure(0, weight=1)
         content.grid_columnconfigure(1, weight=1)
         content.grid_rowconfigure(0, weight=1)
@@ -150,7 +150,7 @@ class App(ctk.CTk):
 
         self.progress_bar = ctk.CTkProgressBar(controls)
         self.progress_bar.set(0)
-        self.progress_bar.pack(pady=10, has_focus=False)
+        self.progress_bar.pack(pady=10)
 
         # Visuals Area
         visuals = ctk.CTkFrame(self.train_tab, corner_radius=15, fg_color="transparent")
