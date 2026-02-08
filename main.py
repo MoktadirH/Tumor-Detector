@@ -30,10 +30,14 @@ class Trainer:
         self._prepare_data()
 
     def _prepare_data(self):
+        # Stronger Augmentation
         train_transforms = transforms.Compose([
             transforms.Resize((IMG_SIZE, IMG_SIZE)),
-            transforms.RandomRotation(10),
+            transforms.RandomRotation(30), # Increased from 10
             transforms.RandomHorizontalFlip(0.5),
+            transforms.RandomVerticalFlip(0.2), # New
+            transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.1), # New
+            transforms.RandomAffine(degrees=0, translate=(0.1, 0.1), scale=(0.9, 1.1)), # New
             transforms.ToTensor(),
             transforms.Normalize(mean=[0.485, 0.456, 0.406],
                                 std =[0.229, 0.224, 0.225])
@@ -94,10 +98,13 @@ class Trainer:
             for param in model.parameters():
                 param.requires_grad = False
                 
-        # Replace final layer
+        # Replace final layer with Dropout and Linear
         num_classes = len(self.class_names)
         in_features = model.fc.in_features
-        model.fc = nn.Linear(in_features, num_classes)
+        model.fc = nn.Sequential(
+            nn.Dropout(0.5), # Regularization
+            nn.Linear(in_features, num_classes)
+        )
         
         self.model = model.to(self.device)
         return self.model
@@ -110,9 +117,14 @@ class Trainer:
         self.build_model(fine_tune)
         
         criterion = nn.CrossEntropyLoss()
-        optimizer = torch.optim.Adam(filter(lambda p: p.requires_grad, self.model.parameters()), lr=learning_rate)
+        # Add Weight Decay (L2 Regularization)
+        optimizer = torch.optim.Adam(filter(lambda p: p.requires_grad, self.model.parameters()), 
+                                     lr=learning_rate, 
+                                     weight_decay=1e-4) # Regularization
         
         best_acc = 0.0
+        patience = 5 # Early stopping patience
+        no_improve = 0
         
         for epoch in range(epochs):
             start_time = time.time()
@@ -160,13 +172,15 @@ class Trainer:
             val_epoch_loss = val_loss / val_total
             val_epoch_acc = val_correct / val_total
             
-            # Save best
+            # Save best & Early Stopping check
             if val_epoch_acc > best_acc:
                 best_acc = val_epoch_acc
                 torch.save(self.model.state_dict(), "best_model.pt")
                 saved_msg = " [Saved Best]"
+                no_improve = 0
             else:
                 saved_msg = ""
+                no_improve += 1
             
             epoch_data = {
                 "epoch": epoch + 1,
@@ -183,22 +197,24 @@ class Trainer:
             
             print(f"Epoch {epoch+1}: Train Loss={train_epoch_loss:.4f} Acc={train_epoch_acc:.4f} | Val Loss={val_epoch_loss:.4f} Acc={val_epoch_acc:.4f}")
 
+            if no_improve >= patience:
+                if callback: callback(f"Early stop at epoch {epoch+1} due to no improvement.", None)
+                print("Early stopping triggered.")
+                break
+
         return best_acc
 
 def load_for_inference(model_path="best_model.pt"):
     device = get_device()
     
-    # Needs class names. Quick way is to read from Training dir like before
-    # Or simplified logic:
     try:
         train_ds = datasets.ImageFolder(TRAIN_DIR)
         class_names = train_ds.classes
     except:
-        class_names = ["Glioma", "Meningioma", "No Tumor", "Pituitary"] # Fallback
+        class_names = ["Glioma", "Meningioma", "No Tumor", "Pituitary"]
 
     num_classes = len(class_names)
     
-    # Transforms
     preprocess = transforms.Compose([
         transforms.Resize((IMG_SIZE, IMG_SIZE)),
         transforms.ToTensor(),
@@ -206,9 +222,13 @@ def load_for_inference(model_path="best_model.pt"):
                              std =[0.229, 0.224, 0.225])
     ])
     
-    # Model Structure
+    # Structure must match training structure (with dropout)
     model = models.resnet18(weights=models.ResNet18_Weights.DEFAULT)
-    model.fc = nn.Linear(model.fc.in_features, num_classes)
+    in_features = model.fc.in_features
+    model.fc = nn.Sequential(
+        nn.Dropout(0.5), 
+        nn.Linear(in_features, num_classes)
+    )
     
     model = model.to(device)
     
@@ -222,6 +242,5 @@ def load_for_inference(model_path="best_model.pt"):
     return model, class_names, preprocess, device
 
 if __name__ == "__main__":
-    # Test run
     trainer = Trainer()
     trainer.train(epochs=1, fine_tune=False)
