@@ -1,0 +1,27 @@
+Model Metrics Report
+============================================================
+Generated: 2026-03-20 16:51:23
+Test directory: C:\Users\mokta\Documents\Tumor Detector\Testing
+
+Overall Metrics
+------------------------------------------------------------
+Overall Accuracy : 0.9809 (98.09%)
+Macro F1 Score   : 0.9796
+Weighted F1 Score: 0.9809
+Overall Score    : 0.9803  (mean of Accuracy and Macro F1)
+
+Per-Class Metrics
+------------------------------------------------------------
+Class                    Accuracy     F1 Score
+------------------------------------------------------------
+glioma                     0.9767       0.9750
+meningioma                 0.9510       0.9588
+notumor                    0.9975       0.9963
+pituitary                  0.9933       0.9884
+
+Confusion Matrix (rows=true, cols=pred)
+------------------------------------------------------------
+[[293   7   0   0]
+ [  8 291   2   5]
+ [  0   1 404   0]
+ [  0   2   0 298]]
