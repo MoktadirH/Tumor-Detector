@@ -6,6 +6,7 @@ from torch.utils.data import DataLoader, random_split
 from torchvision import datasets, transforms, models
 import time
 import copy
+from metrics_report import evaluate_model_and_write_report
 
 # Constants
 TRAIN_DIR = r"Training"
@@ -201,6 +202,33 @@ class Trainer:
                 if callback: callback(f"Early stop at epoch {epoch+1} due to no improvement.", None)
                 print("Early stopping triggered.")
                 break
+
+        # Evaluate on test set and write personal metrics report
+        report_file = "model_metrics_report.txt"
+        try:
+            if os.path.exists("best_model.pt"):
+                self.model.load_state_dict(torch.load("best_model.pt", map_location=self.device))
+
+            metrics = evaluate_model_and_write_report(
+                model=self.model,
+                device=self.device,
+                test_dir=self.test_dir,
+                class_names=self.class_names,
+                report_path=report_file,
+                batch_size=BATCH_SIZE,
+            )
+            report_msg = (
+                f"Metrics report saved: {metrics['report_path']} | "
+                f"Acc: {metrics['overall_accuracy']:.4f} | Macro F1: {metrics['macro_f1']:.4f}"
+            )
+            print(report_msg)
+            if callback:
+                callback(report_msg, None)
+        except Exception as e:
+            error_msg = f"Could not generate metrics report: {e}"
+            print(error_msg)
+            if callback:
+                callback(error_msg, None)
 
         return best_acc
 
